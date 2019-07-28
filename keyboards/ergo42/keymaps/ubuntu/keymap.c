@@ -21,7 +21,8 @@ enum custom_keycodes {
   MCR3,                // マクロ3
   DYNAMIC_MACRO_RANGE, // ダイナミックマクロ
   WN_SCLN,             // タップでJISの「:」  シフトでJISの「;」 (Windows)
-  CMDCTL  // ctrlをcmdと同じように扱うための試み
+  CMDCTL,  // ctrlをcmdと同じように扱うための試み
+  DCTLHOME,  // ctrlキーをカウンターしてからHOMEをおす
 };
 
 
@@ -44,7 +45,7 @@ enum custom_keycodes {
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   /* QWERTY // UbuntuでJIS配列時のデフォルトキーマップ
    * ,-------------------------------------------------------.   ,-------------------------------------------------------.
-   * |Tab/Alt|   Q   |   W   |   E   |   R   |   T   |   -   |   |   =   |   Y   |   U   |   I   |   O   |   P   |   \   |
+   * |Tab    |   Q   |   W   |   E   |   R   |   T   |   -   |   |   =   |   Y   |   U   |   I   |   O   |   P   |   \   |
    * |-------+-------+-------+-------+-------+-------+-------|   |-------+-------+-------+-------+-------+-------+-------|
    * |  Ctrl |   A   |   S   |   D   |   F   |   G   |   '   |   |   `   |   H   |   J   |   K   |   L   |   :   | [/Sft |
    * |-------+-------+-------+-------+-------+-------+-------|   |-------+-------+-------+-------+-------+-------+-------|
@@ -55,10 +56,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    * `-------------------------------------------------------'   `-------------------------------------------------------'
    */
   [_QWERTY] = LAYOUT( \
-    KC_ALTB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_MINS,   KC_EQL, KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_BSLS, \
+    KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_MINS,   KC_EQL, KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_BSLS, \
     KC_LCTL,  KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_QUOT,   KC_GRV, KC_H,    KC_J,    KC_K,    KC_L,    WN_SCLN, KC_LBRC, \
     KC_LSFT,  KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_BSPC,   KC_ESC, KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_UP,    KC_RSRB, \
-    KC_LOWR,  KC_LGUI, _______,  KC_ESC,  KC_LALT, CMDCTL,  KC_SPC,   KC_ENT,  KC_RASE,  KC_RASE, KC_SLSH, KC_LEFT, KC_DOWN,   KC_RGHT \
+    KC_LOWR,  KC_LGUI, _______,  KC_ESC,  MOD_LALT, CMDCTL,  KC_SPC,   KC_ENT,  KC_RASE,  KC_RASE, KC_SLSH, KC_LEFT, KC_DOWN,   KC_RGHT \
   ),
 
   /* LOWER // 数字入力用レイヤー
@@ -109,10 +110,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    * `-------------------------------------------------------'   `-------------------------------------------------------'
    */
   [_GAME] = LAYOUT( \
-    C(KC_TAB), C(KC_Q),    C(KC_W),    C(KC_E),    C(KC_R),    C(KC_T),    C(KC_MINS),   C(KC_EQL), C(KC_Y),    C(KC_U),    C(KC_I),    C(KC_O),     C(KC_P),    C(KC_BSLS), \
-    _______,   KC_A,    C(KC_S),    C(KC_D),    C(KC_F),    C(KC_G),    C(KC_QUOT),   C(KC_GRV), C(KC_H),    C(KC_J),    C(KC_K),    C(KC_L),     _______,  _______, \
-    KC_LSFT,  C(KC_Z),    C(KC_X),    C(KC_C),    C(KC_V),    C(KC_B),    C(KC_BSPC),   C(KC_ESC), C(KC_N),    C(KC_M),    C(KC_COMM), C(KC_DOT),   KC_UP,  KC_RSFT, \
-    _______,  _______, _______, _______, C(KC_LALT), KC_LCTL, _______, _______, _______, RAISE,    _______,  KC_HOME, KC_DOWN,  KC_END \
+    KC_TAB, KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_MINS,   KC_EQL, KC_Y,    KC_U,    KC_I,    KC_O,     KC_P,    KC_BSLS, \
+    _______,   KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_QUOT,   KC_GRV, KC_H,    KC_J,    KC_K,    KC_L,     _______,  _______, \
+    KC_LSFT,  KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_BSPC,   KC_ESC, KC_N,    KC_M,    KC_COMM, KC_DOT,   KC_UP,  KC_RSFT, \
+    _______,  _______, _______, _______, KC_LALT, KC_LCTL, _______, _______, _______, RAISE,    _______,  DCTLHOME, KC_DOWN,  DCTLEND \
   ),
 
   /* ADJUST // 設定用レイヤー (LOWER+RAISE)
@@ -216,9 +217,35 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       if (record->event.pressed) {
         layer_on(_GAME);
         register_code(KC_LCTL); 
+        register_code(KC_LALT); 
       } else {
         layer_off(_GAME);
         unregister_code(KC_LCTL); 
+        unregister_code(KC_LALT); 
+      }
+      return false;
+      break;
+    case DCTLHOME:
+      if (record->event.pressed) {
+        unregister_code(KC_LCTL);
+        unregister_code(KC_LALT);
+        register_code(KC_HOME); 
+      } else {
+        register_code(KC_LCTL); 
+        register_code(KC_LALT); 
+        unregister_code(KC_HOME); 
+      }
+      return false;
+      break;
+    case DCTLEND:
+      if (record->event.pressed) {
+        unregister_code(KC_LCTL);
+        unregister_code(KC_LALT);
+        register_code(KC_END); 
+      } else {
+        register_code(KC_LCTL); 
+        register_code(KC_LALT); 
+        unregister_code(KC_END); 
       }
       return false;
       break;
