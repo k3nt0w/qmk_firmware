@@ -23,6 +23,7 @@ enum custom_keycodes {
   WN_SCLN,             // タップでJISの「:」  シフトでJISの「;」 (Windows)
   CMDCTL,  // ctrlをcmdと同じように扱うための試み
   DCTLHOME,  // ctrlキーをカウンターしてからHOMEをおす
+  DCTLEND // ctrlキーをカウンターしてからENDをおす
 };
 
 
@@ -32,8 +33,9 @@ enum custom_keycodes {
 #define KC_LOWR LT(_RAISE, KC_MHEN)    // タップで無変換     ホールドでRaise
 #define KC_GAME LT(_GAME, KC_LCTL)     // タップで左Ctrl     ホールドでGame
 #define KC_RASE LT(_RAISE, KC_HENK)    // タップで変換       ホールドでRaise
+#define KC_CMDCTL LT(CMDCTL, KC_MHEN)   // タップで無変換       ホールドでCMDCTL
 #define KC_LSLB MT(MOD_LSFT, KC_LBRC)  // タップで[          ホールドで左Shift
-#define KC_RSRB MT(_RAISE, KC_RBRC)    // タップで]          ホールドでRaise
+#define KC_RSRB LT(_RAISE, KC_RBRC)    // タップで]          ホールドでRaise
 #define KC_ALTB MT(MOD_LALT, KC_TAB)   // タップでTAB        ホールドで左Alt
 #define CTL_ZH  CTL_T(KC_ZKHK)         // タップで半角/全角  ホールドで左Control     (Windows)
 #define WN_CAPS S(KC_CAPS)             // Caps Lock                                  (Windows)
@@ -51,15 +53,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    * |-------+-------+-------+-------+-------+-------+-------|   |-------+-------+-------+-------+-------+-------+-------|
    * |  Sift |   Z   |   X   |   C   |   V   |   B   |  BSPC |   |  ESC  |   N   |   M   |   ,   |   .   |   Up  |]/RAISE|
    * |-------+-------+-------+-------+-------+-------+-------|   |-------+-------+-------+-------+-------+-------+-------|
-   * |無変換  |  GUI  |       |  Esc  |  Alt  | Ctrl  | Space |   | Enter | 変換   | 変換   |  /   |  Left |  Down | Right |
-   * |Lower  |       |       |       |       | GAME  |       |   |       | RAISE | RAISE |       |       |       |       |
+   * |無変換  |  GUI  |       |  Alt  | 無変換 | 無変換 | Space |   | Enter | 変換   | 変換   |  /   |  Left |  Down | Right |
+   * |Lower  |       |       |       | RAISE | CMDCTL|       |   |       | RAISE | RAISE |       |       |       |       |
    * `-------------------------------------------------------'   `-------------------------------------------------------'
    */
-  [_QWERTY] = LAYOUT( \
+  [_QWERTY] = LAYOUT(\
     KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_MINS,   KC_EQL, KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_BSLS, \
     KC_LCTL,  KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_QUOT,   KC_GRV, KC_H,    KC_J,    KC_K,    KC_L,    WN_SCLN, KC_LBRC, \
     KC_LSFT,  KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_BSPC,   KC_ESC, KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_UP,    KC_RSRB, \
-    KC_LOWR,  KC_LGUI, _______,  KC_ESC,  MOD_LALT, CMDCTL,  KC_SPC,   KC_ENT,  KC_RASE,  KC_RASE, KC_SLSH, KC_LEFT, KC_DOWN,   KC_RGHT \
+    KC_LOWR,  KC_LGUI, _______,  KC_LALT, KC_LALT,  CMDCTL, KC_SPC,   KC_ENT,  KC_RASE,  KC_RASE, KC_SLSH, KC_LEFT, KC_DOWN,   KC_RGHT \
   ),
 
   /* LOWER // 数字入力用レイヤー
@@ -110,7 +112,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    * `-------------------------------------------------------'   `-------------------------------------------------------'
    */
   [_GAME] = LAYOUT( \
-    KC_TAB, KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_MINS,   KC_EQL, KC_Y,    KC_U,    KC_I,    KC_O,     KC_P,    KC_BSLS, \
+    KC_ZKHK, KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_MINS,   KC_EQL, KC_Y,    KC_U,    KC_I,    KC_O,     KC_P,    KC_BSLS, \
     _______,   KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_QUOT,   KC_GRV, KC_H,    KC_J,    KC_K,    KC_L,     _______,  _______, \
     KC_LSFT,  KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_BSPC,   KC_ESC, KC_N,    KC_M,    KC_COMM, KC_DOT,   KC_UP,  KC_RSFT, \
     _______,  _______, _______, _______, KC_LALT, KC_LCTL, _______, _______, _______, RAISE,    _______,  DCTLHOME, KC_DOWN,  DCTLEND \
@@ -215,24 +217,22 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       break;
     case CMDCTL:
       if (record->event.pressed) {
+        register_code(KC_MHEN); 
+        unregister_code(KC_MHEN);
         layer_on(_GAME);
-        register_code(KC_LCTL); 
-        register_code(KC_LALT); 
+        register_code(KC_LCTL);
       } else {
+        unregister_code(KC_LCTL);
         layer_off(_GAME);
-        unregister_code(KC_LCTL); 
-        unregister_code(KC_LALT); 
       }
       return false;
       break;
     case DCTLHOME:
       if (record->event.pressed) {
         unregister_code(KC_LCTL);
-        unregister_code(KC_LALT);
         register_code(KC_HOME); 
       } else {
         register_code(KC_LCTL); 
-        register_code(KC_LALT); 
         unregister_code(KC_HOME); 
       }
       return false;
@@ -240,11 +240,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case DCTLEND:
       if (record->event.pressed) {
         unregister_code(KC_LCTL);
-        unregister_code(KC_LALT);
         register_code(KC_END); 
       } else {
         register_code(KC_LCTL); 
-        register_code(KC_LALT); 
         unregister_code(KC_END); 
       }
       return false;
